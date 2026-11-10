@@ -35,6 +35,7 @@ def decode(key):
 
 
 def main():
+    sys.stdout.reconfigure(line_buffering=True)
     print("== 1. Ключ из базы бота")
     try:
         db = sqlite3.connect("file:%s?mode=ro" % DB, uri=True)
@@ -90,10 +91,14 @@ def main():
     cfg = {"log": {"loglevel": "warning"},
            "inbounds": [{"listen": "127.0.0.1", "port": 10998, "protocol": "http"}],
            "outbounds": [out2]}
+    dx(["sh", "-c", "kill $(ps | grep '/tmp/t.json' | grep -v grep | awk '{print $1}') 2>/dev/null; rm -f /tmp/t.log"])
     dx(["sh", "-c", "cat > /tmp/t.json"], inp=json.dumps(cfg))
-    dx(["sh", "-c", "nohup xray run -c /tmp/t.json >/tmp/t.log 2>&1 &"])
+    sh(["docker", "exec", "-d", CT, "sh", "-c", "xray run -c /tmp/t.json >/tmp/t.log 2>&1"])
     time.sleep(3)
-    rc, res = dx(["sh", "-c", "http_proxy=http://127.0.0.1:10998 wget -qO- -T 10 http://1.1.1.1/cdn-cgi/trace | head -3"], timeout=30)
+    try:
+        rc, res = dx(["sh", "-c", "http_proxy=http://127.0.0.1:10998 wget -qO- -T 10 http://1.1.1.1/cdn-cgi/trace | head -3"], timeout=30)
+    except subprocess.TimeoutExpired:
+        res = "таймаут"
     good = "ip=" in res
     ok(good, "запрос через ключ внутри сервера " + ("прошёл: " + res.strip().replace("\n", " ") if good else "НЕ прошёл"))
     if not good:
@@ -108,4 +113,15 @@ def main():
         print("  Ключ не работает даже внутри сервера: проблема в настройках сервера или клиента (см. пункты [!!] выше).")
 
 
-main()
+try:
+    main()
+except Exception as e:
+    import traceback
+    print("  [!!]  скрипт упал:", type(e).__name__, e)
+    traceback.print_exc()
+finally:
+    try:
+        dx(["sh", "-c", "kill $(ps | grep '/tmp/t.json' | grep -v grep | awk '{print $1}') 2>/dev/null"])
+    except Exception:
+        pass
+    print("== ГОТОВО (если видишь эту строку, вывод полный)")
