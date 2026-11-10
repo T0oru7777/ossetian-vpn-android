@@ -1,0 +1,68 @@
+name: Build APK
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.9"
+
+      - name: Скачать ядро Xray для Android
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p app/libs
+          gh release download --repo 2dust/AndroidLibXrayLite --pattern 'libv2ray.aar' --dir app/libs --clobber
+          ls -la app/libs
+
+      - name: Собрать APK
+        shell: bash
+        run: |
+          set +e
+          gradle :app:assembleRelease --no-daemon --stacktrace 2>&1 | tee /tmp/build.log
+          code=${PIPESTATUS[0]}
+          exit $code
+
+      - name: Сохранить лог ошибки в ветку ci-logs
+        if: failure()
+        run: |
+          cp /tmp/build.log /tmp/build-log.txt || echo "no log" > /tmp/build-log.txt
+          git config user.name "ci"
+          git config user.email "ci@users.noreply.github.com"
+          git checkout --orphan ci-logs
+          git rm -rf . -q || true
+          tail -n 400 /tmp/build-log.txt > build-log.txt
+          git add build-log.txt
+          git commit -qm "build log"
+          git push -f origin ci-logs
+
+      - name: Подготовить файл
+        run: cp app/build/outputs/apk/release/app-release.apk OssetianVPN.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: OssetianVPN-apk
+          path: OssetianVPN.apk
+
+      - name: Опубликовать в Releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete latest -y --cleanup-tag || true
+          gh release create latest OssetianVPN.apk --title "Ossetian VPN для Android" --notes "Скачай OssetianVPN.apk, открой на телефоне и разреши установку из неизвестных источников."
