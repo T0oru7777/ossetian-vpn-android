@@ -72,19 +72,34 @@ class VpnSvc : VpnService() {
         }.start()
     }
 
-    /** Делает запрос через туннель и возвращает внешний IP (или null, если интернет через сервер не идёт) */
+    /**
+     * Проверяет, что интернет идёт через туннель. Возвращает внешний IP, пустую строку (ответ получен, но IP неизвестен)
+     * или null, если через сервер ничего не проходит.
+     */
     private fun healthCheck(socksPort: Int): String? {
         val proxy = java.net.Proxy(java.net.Proxy.Type.SOCKS, java.net.InetSocketAddress("127.0.0.1", socksPort))
         for (i in 0 until 3) {
             try {
-                val c = java.net.URL("http://1.1.1.1/cdn-cgi/trace").openConnection(proxy) as java.net.HttpURLConnection
+                val c = java.net.URL("https://1.1.1.1/cdn-cgi/trace").openConnection(proxy) as java.net.HttpURLConnection
                 c.connectTimeout = 5000
                 c.readTimeout = 5000
+                c.instanceFollowRedirects = false
                 val body = c.inputStream.bufferedReader().readText()
                 c.disconnect()
                 val m = Regex("ip=(\\S+)").find(body)
-                if (m != null) return m.groupValues[1]
-            } catch (e: Exception) { }
+                return m?.groupValues?.get(1) ?: ""
+            } catch (e: Exception) {
+                // https не вышло: любой ответ по обычному http тоже означает, что туннель работает
+                try {
+                    val c2 = java.net.URL("http://1.1.1.1/").openConnection(proxy) as java.net.HttpURLConnection
+                    c2.connectTimeout = 5000
+                    c2.readTimeout = 5000
+                    c2.instanceFollowRedirects = false
+                    c2.responseCode
+                    c2.disconnect()
+                    return ""
+                } catch (e2: Exception) { }
+            }
             try { Thread.sleep(1000) } catch (e: InterruptedException) { }
         }
         return null
