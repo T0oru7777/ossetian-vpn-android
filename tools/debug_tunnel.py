@@ -51,10 +51,10 @@ def main():
         rc, xp = dx(["sh", "-c", "command -v xray"])
         sh(["docker", "cp", CT + ":" + xp.strip(), "/tmp/xray-test"])
         os.chmod("/tmp/xray-test", 0o755)
-        rc, ip = sh(["docker", "inspect", "-f", "{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}", CT])
+        rc, ip = sh(["docker", "inspect", "-f", "{{range .NetworkSettings.Networks}}{{.IPAddress}} {{end}}", CT])
         o2 = json.loads(json.dumps(out))
         o2["tag"] = "proxy"
-        o2["settings"]["vnext"][0]["address"] = ip.strip()
+        o2["settings"]["vnext"][0]["address"] = ip.split()[0]
         o2["settings"]["vnext"][0]["port"] = port
         json.dump({"log": {"loglevel": "debug"}, "inbounds": [{"listen": "127.0.0.1", "port": 10998, "protocol": "http"}],
                    "outbounds": [o2]}, open("/tmp/xray-test.json", "w"))

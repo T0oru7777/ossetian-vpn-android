@@ -87,10 +87,10 @@ def main():
     rc, xp = dx(["sh", "-c", "command -v xray"])
     sh(["docker", "cp", CT + ":" + xp.strip(), "/tmp/xray-test"])
     os.chmod("/tmp/xray-test", 0o755)
-    rc, ip = sh(["docker", "inspect", "-f", "{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}", CT])
+    rc, ip = sh(["docker", "inspect", "-f", "{{range .NetworkSettings.Networks}}{{.IPAddress}} {{end}}", CT])
     out2 = json.loads(json.dumps(out))
     out2["tag"] = "proxy"
-    out2["settings"]["vnext"][0]["address"] = ip.strip()
+    out2["settings"]["vnext"][0]["address"] = ip.split()[0]
     out2["settings"]["vnext"][0]["port"] = inb.get("port")
     cfg = {"log": {"loglevel": "warning"},
            "inbounds": [{"listen": "127.0.0.1", "port": 10998, "protocol": "http"}],
