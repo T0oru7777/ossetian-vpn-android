@@ -10,11 +10,13 @@ object Core {
     @Volatile var status = "off"
     @Volatile var error = ""
     @Volatile var since = 0L
+    @Volatile var ip = ""
     @Volatile var onChange: (() -> Unit)? = null
 
-    fun set(s: String, e: String = "") {
+    fun set(s: String, e: String = "", exitIp: String = "") {
         status = s
         error = e
+        ip = exitIp
         since = if (s == "on") System.currentTimeMillis() else 0L
         onChange?.invoke()
     }
@@ -84,6 +86,6 @@ object Store {
         }
         return JSONObject().put("keys", ks).put("selected", selected)
             .put("settings", JSONObject().put("systemProxy", false).put("intro", intro).put("theme", theme))
-            .put("state", JSONObject().put("status", Core.status).put("error", Core.error).put("since", Core.since))
+            .put("state", JSONObject().put("status", Core.status).put("error", Core.error).put("since", Core.since).put("ip", Core.ip))
     }
 }

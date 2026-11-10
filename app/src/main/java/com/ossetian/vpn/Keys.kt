@@ -140,12 +140,18 @@ object Keys {
         val sniff = JSONObject().put("enabled", true).put("destOverride", JSONArray().put("http").put("tls"))
         return JSONObject()
             .put("log", JSONObject().put("loglevel", "warning"))
-            .put("inbounds", JSONArray().put(
-                JSONObject().put("tag", "tun").put("protocol", "tun")
+            .put("inbounds", JSONArray()
+                .put(JSONObject().put("tag", "tun").put("protocol", "tun")
                     .put("settings", JSONObject().put("name", "xray0").put("MTU", 1500).put("userLevel", 0))
-                    .put("sniffing", sniff)))
+                    .put("sniffing", sniff))
+                // локальный SOCKS нужен только самому приложению для проверки, что туннель работает
+                .put(JSONObject().put("tag", "socks-in").put("listen", "127.0.0.1").put("port", 10808).put("protocol", "socks")
+                    .put("settings", JSONObject().put("udp", false).put("auth", "noauth"))))
             .put("outbounds", JSONArray().put(outbound)
                 .put(JSONObject().put("tag", "direct").put("protocol", "freedom"))
                 .put(JSONObject().put("tag", "block").put("protocol", "blackhole")))
+            .put("routing", JSONObject().put("domainStrategy", "AsIs").put("rules", JSONArray()
+                // QUIC (UDP 443) через VLESS+Vision не работает: блокируем, чтобы приложения сразу переходили на TCP
+                .put(JSONObject().put("type", "field").put("network", "udp").put("port", "443").put("outboundTag", "block"))))
     }
 }

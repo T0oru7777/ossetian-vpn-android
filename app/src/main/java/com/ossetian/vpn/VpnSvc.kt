@@ -55,14 +55,38 @@ class VpnSvc : VpnService() {
                 val c = Libv2ray.newCoreController(handler)
                 ctrl = c
                 c.startLoop(cfg, f.fd)
-                Core.set("on")
+                val ip = healthCheck() ?: throw Exception("NOTUNNEL")
+                Core.set("on", "", ip)
             } catch (e: Throwable) {
                 cleanup()
                 val m = e.message ?: e.javaClass.simpleName
-                Core.set("off", if (e is KeyError || m.startsWith("Сначала")) m else "Не удалось подключиться. $m")
+                val msg = when {
+                    m == "NOTUNNEL" -> "Соединение с сервером есть, но интернет через него не работает. Скорее всего, ключ просрочен или сервер не пропускает трафик. Попробуй другой ключ или напиши в поддержку."
+                    e is KeyError || m.startsWith("Сначала") || m.startsWith("Сервер") -> m
+                    else -> "Не удалось подключиться. $m"
+                }
+                Core.set("off", msg)
                 stopSelf()
             }
         }.start()
+    }
+
+    /** Делает запрос через туннель и возвращает внешний IP (или null, если интернет через сервер не идёт) */
+    private fun healthCheck(): String? {
+        val proxy = java.net.Proxy(java.net.Proxy.Type.SOCKS, java.net.InetSocketAddress("127.0.0.1", 10808))
+        for (i in 0 until 3) {
+            try {
+                val c = java.net.URL("http://1.1.1.1/cdn-cgi/trace").openConnection(proxy) as java.net.HttpURLConnection
+                c.connectTimeout = 5000
+                c.readTimeout = 5000
+                val body = c.inputStream.bufferedReader().readText()
+                c.disconnect()
+                val m = Regex("ip=(\\S+)").find(body)
+                if (m != null) return m.groupValues[1]
+            } catch (e: Exception) { }
+            try { Thread.sleep(1000) } catch (e: InterruptedException) { }
+        }
+        return null
     }
 
     private fun cleanup() {

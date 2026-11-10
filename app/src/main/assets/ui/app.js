@@ -82,7 +82,7 @@
       if (!k) { go("keys"); openAdd(); return; }
       on ? window.vpn.disconnect() : window.vpn.connect();
     } }, svg(ICON.power));
-    var timerEl = el("small", { id: "tm", text: on ? "Подключено " + fmt(Date.now() - st.since) : busy ? "Соединяемся…" : k ? "Нажми, чтобы подключиться" : "Сначала добавь ключ" });
+    var timerEl = el("small", { id: "tm", text: on ? "Подключено " + fmt(Date.now() - st.since) + (st.ip ? " · IP " + st.ip : "") : busy ? "Соединяемся…" : k ? "Нажми, чтобы подключиться" : "Сначала добавь ключ" });
     var w = el("div", null, banner(), el("div", { class: "orn" }),
       el("div", { class: "power-wrap" }, btn),
       el("div", { class: "state" }, on ? "Защищено" : busy ? "Подключаем" : "Отключено", timerEl),
@@ -163,7 +163,7 @@
     app.appendChild(v);
     syncNav();
     clearInterval(timer);
-    if (S.state.status === "on") timer = setInterval(function () { var t = document.getElementById("tm"); if (t) t.textContent = "Подключено " + fmt(Date.now() - S.state.since); }, 1000);
+    if (S.state.status === "on") timer = setInterval(function () { var t = document.getElementById("tm"); if (t) t.textContent = "Подключено " + fmt(Date.now() - S.state.since) + (S.state.ip ? " · IP " + S.state.ip : ""); }, 1000);
   }
   function go(t) { if (t === tab) return; prevTab = tab; tab = t; render(true); }
   function buildNav() {
