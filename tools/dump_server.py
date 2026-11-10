@@ -20,5 +20,5 @@ else:
     for i in c.get("inbounds", []):
         s = i.get("settings", {})
         if isinstance(s.get("clients"), list):
-            s["clients"] = "<%d клиентов, flow: %s>" % (len(s["clients"]), sorted({x.get("flow") for x in s["clients"]}))
+            s["clients"] = "<%d клиентов, flow: %s>" % (len(s["clients"]), sorted({str(x.get("flow")) for x in s["clients"]}))
     print(json.dumps(red(c), indent=1, ensure_ascii=False))
