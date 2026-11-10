@@ -6,7 +6,7 @@ import json, os, subprocess, sys, time
 CT = os.environ.get("XRAY_CONTAINER", "amnezia-xray")
 SRV = os.environ.get("XRAY_SERVER_JSON", "/opt/amnezia/xray/server.json")
 BAK = "/root/xray-server.json.bak-" + time.strftime("%Y%m%d-%H%M%S")
-TMP = "/root/xray-server.json.new"
+TMP = "/root/xray-server.new.json"
 
 
 def run(*a):
@@ -40,8 +40,8 @@ if not changed:
     sys.exit("Сервер уже на tcp, менять нечего.")
 
 open(TMP, "w").write(json.dumps(c, indent=4))
-t = run("docker", "cp", TMP, CT + ":/tmp/server.json.new")
-t = run("docker", "exec", CT, "xray", "run", "-test", "-c", "/tmp/server.json.new")
+t = run("docker", "cp", TMP, CT + ":/tmp/server.new.json")
+t = run("docker", "exec", CT, "xray", "run", "-test", "-format", "json", "-c", "/tmp/server.new.json")
 print("Проверка нового конфига:", "ОК" if t.returncode == 0 else "ОШИБКА\n" + t.stdout + t.stderr)
 if t.returncode:
     sys.exit("Ничего не изменено.")
