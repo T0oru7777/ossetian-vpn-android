@@ -179,10 +179,74 @@
     navInd.style.transform = "translate(" + on.offsetLeft + "px," + on.offsetTop + "px)";
     if (instant) { void navInd.offsetWidth; navInd.style.transition = ""; }
   }
-  function splash() {
-    var s = el("div", { class: "splash" }, el("div", { class: "sc" }), el("div", { class: "nm" }, el("div", { class: "eyebrow", text: "Ирыстон" }), el("div", { class: "brand" }, "Ossetian ", el("b", { text: "VPN" }))));
-    s.firstChild.innerHTML = window.SCENE;
-    document.body.appendChild(s); setTimeout(function () { s.remove(); }, 2700);
+  function playIntro() {
+    document.body.classList.add("introing");
+    var holder = document.createElement("div"); holder.innerHTML = window.SCENE;
+    var svgEl = holder.firstChild;  // SCENE: статичная картинка из этого файла
+    svgEl.setAttribute("class", "world");
+    var asp = window.innerWidth / window.innerHeight, wide = asp > 0.9;
+    if (wide) { var hh = 440, ww = hh * asp; svgEl.setAttribute("viewBox", (195 - ww / 2).toFixed(1) + " -178 " + ww.toFixed(1) + " " + hh); }
+    else svgEl.setAttribute("viewBox", "40 -440 310 702");
+    var k = Array.prototype.slice.call(svgEl.children);  // 0 defs, 1 солнце, 2 звёзды, 3 дальние горы, 4 главная вершина, 5 снег, 6 передний план, 7 ёлки, 8 река, 9 блики, 10 земля
+    var names = [null, "i-sun", null, "i-far", "i-peak", "i-snow", "i-front", "i-trees", "i-river", "i-flow", "i-base", "i-trees"];
+    for (var i = 0; i < names.length; i++) if (names[i] && k[i]) k[i].setAttribute("class", names[i]);
+    if (k[8]) k[8].setAttribute("pathLength", "1");
+    k[2].setAttribute("opacity", "0");
+    var NS = "http://www.w3.org/2000/svg";
+    var sky = document.createElementNS(NS, "g");
+    sky.innerHTML = '<defs><linearGradient id="iSky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#030714"/><stop offset=".55" stop-color="#101d44"/><stop offset=".88" stop-color="#3b2b52"/><stop offset="1" stop-color="#7a4a4f"/></linearGradient></defs>' +
+      '<rect x="-2000" y="-460" width="4400" height="720" fill="url(#iSky)"/>';
+    var stars = document.createElementNS(NS, "g");
+    for (var n = 0; n < 150; n++) {
+      var c = document.createElementNS(NS, "circle");
+      c.setAttribute("cx", (-300 + Math.random() * 1000).toFixed(1)); c.setAttribute("cy", (-450 + Math.random() * 520).toFixed(1));
+      c.setAttribute("r", (0.5 + Math.random() * 1.1).toFixed(2)); c.setAttribute("fill", "#fff");
+      if (n % 4 === 0) { c.setAttribute("class", "i-star"); c.style.animationDelay = (Math.random() * 2.4).toFixed(2) + "s"; } else c.setAttribute("opacity", (0.35 + Math.random() * 0.6).toFixed(2));
+      stars.appendChild(c);
+    }
+    var glint = document.createElementNS(NS, "g");  // вспышка ровно на вершине (172, 64)
+    glint.setAttribute("transform", "translate(172,64)");
+    glint.innerHTML = '<defs><radialGradient id="iGl"><stop offset="0" stop-color="#fff" stop-opacity=".95"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient></defs>' +
+      '<g class="i-glint"><circle r="11" fill="url(#iGl)"/><path d="M0,-17 L1.7,-1.7 L17,0 L1.7,1.7 L0,17 L-1.7,1.7 L-17,0 L-1.7,-1.7Z" fill="#fff"/>' +
+      '<path d="M0,-7 L1,-1 L7,0 L1,1 L0,7 L-1,1 L-7,0 L-1,-1Z" fill="#fff" transform="rotate(45)"/></g>';
+    if (wide) {  // на широком экране горы растворяются по краям
+      var defs = document.createElementNS(NS, "defs");
+      defs.innerHTML = '<linearGradient id="iFadeG" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#000"/><stop offset=".22" stop-color="#fff"/><stop offset=".78" stop-color="#fff"/><stop offset="1" stop-color="#000"/></linearGradient>' +
+        '<mask id="iFade" maskUnits="userSpaceOnUse" x="-10" y="-100" width="420" height="400"><rect x="-10" y="-100" width="420" height="400" fill="url(#iFadeG)"/></mask>';
+      svgEl.insertBefore(defs, svgEl.firstChild);
+      var grp = document.createElementNS(NS, "g"); grp.setAttribute("mask", "url(#iFade)");
+      svgEl.insertBefore(grp, k[3]);
+      for (var q = 3; q <= 11; q++) if (k[q]) grp.appendChild(k[q]);
+    }
+    svgEl.insertBefore(stars, k[1]); svgEl.insertBefore(sky, stars); svgEl.appendChild(glint);
+
+    var letters = "Ossetian VPN".split(""), brand = el("div", { class: "i-brand" });
+    letters.forEach(function (ch, idx) {
+      var sp = el("span", { class: idx > 8 ? "gold" : "", text: ch === " " ? "\u00a0" : ch });
+      sp.style.animationDelay = (1.9 + idx * 0.07).toFixed(2) + "s"; brand.appendChild(sp);
+    });
+    var box = el("div", { class: "intro", id: "intro" },
+      el("div", { class: "aurora a1" }), el("div", { class: "aurora a2" }), svgEl,
+      el("div", { class: "i-title" }, el("div", { class: "i-eyebrow", text: "Ирыстон" }), brand, el("div", { class: "i-orn" }),
+        el("div", { class: "i-tag", text: "Свободный интернет из сердца гор" })),
+      el("div", { class: "i-skip", text: "НАЖМИ, ЧТОБЫ ПРОПУСТИТЬ" }));
+    document.body.appendChild(box);
+
+    var done = false;
+    function finish() {
+      if (done) return; done = true;
+      box.classList.add("out");
+      setTimeout(function () {  // интерфейс появляется под тающей заставкой
+        document.body.classList.remove("introing");
+        var v = document.getElementById("app"); var view = v && v.querySelector(".view");
+        if (view) { view.classList.remove("enter"); void view.offsetWidth; view.classList.add("enter"); }
+        var nav = document.getElementById("tabs"); if (nav) { nav.classList.remove("rise"); void nav.offsetWidth; nav.classList.add("rise"); }
+      }, 160);
+      setTimeout(function () { box.remove(); }, 760);
+    }
+    var t0 = Date.now();
+    box.addEventListener("click", function () { if (Date.now() - t0 > 700) finish(); });
+    setTimeout(finish, 5200);
   }
 
   window.addEventListener("resize", function () { syncNav(true); });
@@ -195,6 +259,6 @@
   });
   window.vpn.get().then(function (s) {
     S = s; applyTheme(s.settings.theme); render(false); syncNav(true);
-    if (s.settings.intro) splash();
+    if (s.settings.intro) playIntro();
   });
 })();

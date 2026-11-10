@@ -115,14 +115,24 @@ object Keys {
     }
 
     fun parse(text: String): Parsed {
-        val t = text.trim()
+        val t = text.trim().trim('`', '"', '\'', '«', '»', '<', '>').trim()
+        if (t.isEmpty()) throw KeyError("Вставь ключ.")
         val l = t.lowercase()
-        return when {
-            t.isEmpty() -> throw KeyError("Вставь ключ.")
-            l.startsWith("vpn://") -> parseAmnezia(t)
-            l.startsWith("vless://") -> parseVless(t)
-            else -> throw KeyError("Ключ должен начинаться с vpn:// или vless://")
+        val iv = l.indexOf("vpn://")
+        val il = l.indexOf("vless://")
+        if (iv >= 0 && (il < 0 || iv < il)) {
+            val s = t.substring(iv)
+            return try {
+                parseAmnezia(s)
+            } catch (e: KeyError) {
+                // в тексте мог быть лишний текст после ключа: пробуем только первое «слово»
+                val first = s.split(Regex("\\s+"))[0]
+                if (first == s) throw e
+                try { parseAmnezia(first) } catch (e2: KeyError) { throw e }
+            }
         }
+        if (il >= 0) return parseVless(t.substring(il).split(Regex("\\s+"))[0])
+        throw KeyError("Ключ должен начинаться с vpn:// или vless://")
     }
 
     /** Конфиг Xray: весь трафик с VPN-интерфейса (tun) идёт в сервер из ключа */

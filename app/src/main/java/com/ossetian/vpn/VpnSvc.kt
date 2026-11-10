@@ -31,6 +31,15 @@ class VpnSvc : VpnService() {
                 val raw = Store.selectedRaw() ?: throw Exception("Сначала добавь ключ.")
                 val parsed = Keys.parse(raw)
                 val cfg = Keys.buildConfig(parsed.outbound).toString()
+                // проверяем, что сервер вообще отвечает (до включения VPN, поэтому напрямую)
+                val net = parsed.outbound.optJSONObject("streamSettings")?.optString("network", "tcp") ?: "tcp"
+                if (net != "kcp" && net != "mkcp" && net != "quic") {
+                    try {
+                        java.net.Socket().use { it.connect(java.net.InetSocketAddress(parsed.host, parsed.port), 7000) }
+                    } catch (e: Exception) {
+                        throw Exception("Сервер ${parsed.host}:${parsed.port} не отвечает. Проверь интернет. Если интернет есть, возможно, закончился срок ключа или сервер недоступен.")
+                    }
+                }
                 val b = Builder()
                     .setSession("Ossetian VPN")
                     .setMtu(1500)
