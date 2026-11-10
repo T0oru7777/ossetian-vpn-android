@@ -1,0 +1,1 @@
+# Ossetian VPN for Android
