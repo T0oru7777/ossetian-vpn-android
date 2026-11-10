@@ -136,7 +136,7 @@ object Keys {
     }
 
     /** Конфиг Xray: весь трафик с VPN-интерфейса (tun) идёт в сервер из ключа */
-    fun buildConfig(outbound: JSONObject): JSONObject {
+    fun buildConfig(outbound: JSONObject, socksPort: Int): JSONObject {
         val sniff = JSONObject().put("enabled", true).put("destOverride", JSONArray().put("http").put("tls"))
         return JSONObject()
             .put("log", JSONObject().put("loglevel", "warning"))
@@ -145,7 +145,7 @@ object Keys {
                     .put("settings", JSONObject().put("name", "xray0").put("MTU", 1500).put("userLevel", 0))
                     .put("sniffing", sniff))
                 // локальный SOCKS нужен только самому приложению для проверки, что туннель работает
-                .put(JSONObject().put("tag", "socks-in").put("listen", "127.0.0.1").put("port", 10808).put("protocol", "socks")
+                .put(JSONObject().put("tag", "socks-in").put("listen", "127.0.0.1").put("port", socksPort).put("protocol", "socks")
                     .put("settings", JSONObject().put("udp", false).put("auth", "noauth"))))
             .put("outbounds", JSONArray().put(outbound)
                 .put(JSONObject().put("tag", "direct").put("protocol", "freedom"))

@@ -30,7 +30,8 @@ class VpnSvc : VpnService() {
             try {
                 val raw = Store.selectedRaw() ?: throw Exception("Сначала добавь ключ.")
                 val parsed = Keys.parse(raw)
-                val cfg = Keys.buildConfig(parsed.outbound).toString()
+                val socksPort = java.net.ServerSocket(0).use { it.localPort }
+                val cfg = Keys.buildConfig(parsed.outbound, socksPort).toString()
                 // проверяем, что сервер вообще отвечает (до включения VPN, поэтому напрямую)
                 val net = parsed.outbound.optJSONObject("streamSettings")?.optString("network", "tcp") ?: "tcp"
                 if (net != "kcp" && net != "mkcp" && net != "quic") {
@@ -55,7 +56,7 @@ class VpnSvc : VpnService() {
                 val c = Libv2ray.newCoreController(handler)
                 ctrl = c
                 c.startLoop(cfg, f.fd)
-                val ip = healthCheck() ?: throw Exception("NOTUNNEL")
+                val ip = healthCheck(socksPort) ?: throw Exception("NOTUNNEL")
                 Core.set("on", "", ip)
             } catch (e: Throwable) {
                 cleanup()
@@ -72,8 +73,8 @@ class VpnSvc : VpnService() {
     }
 
     /** Делает запрос через туннель и возвращает внешний IP (или null, если интернет через сервер не идёт) */
-    private fun healthCheck(): String? {
-        val proxy = java.net.Proxy(java.net.Proxy.Type.SOCKS, java.net.InetSocketAddress("127.0.0.1", 10808))
+    private fun healthCheck(socksPort: Int): String? {
+        val proxy = java.net.Proxy(java.net.Proxy.Type.SOCKS, java.net.InetSocketAddress("127.0.0.1", socksPort))
         for (i in 0 until 3) {
             try {
                 val c = java.net.URL("http://1.1.1.1/cdn-cgi/trace").openConnection(proxy) as java.net.HttpURLConnection
