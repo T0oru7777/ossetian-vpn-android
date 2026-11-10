@@ -83,34 +83,44 @@ def main():
         print("  (не смог вычислить публичный ключ сервера, пропускаю)")
     print("  порт сервера:", inb.get("port"), "| flow сервера у клиента:", next((c.get("flow") for c in clients if c.get("id") == user.get("id")), None))
 
-    print("== 3. Живой тест внутри сервера (без вашего провайдера)")
+    print("== 3. Живой тест на сервере (без вашего провайдера)")
+    rc, xp = dx(["sh", "-c", "command -v xray"])
+    sh(["docker", "cp", CT + ":" + xp.strip(), "/tmp/xray-test"])
+    os.chmod("/tmp/xray-test", 0o755)
+    rc, ip = sh(["docker", "inspect", "-f", "{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}", CT])
     out2 = json.loads(json.dumps(out))
     out2["tag"] = "proxy"
-    out2["settings"]["vnext"][0]["address"] = "127.0.0.1"
+    out2["settings"]["vnext"][0]["address"] = ip.strip()
     out2["settings"]["vnext"][0]["port"] = inb.get("port")
     cfg = {"log": {"loglevel": "warning"},
            "inbounds": [{"listen": "127.0.0.1", "port": 10998, "protocol": "http"}],
            "outbounds": [out2]}
-    dx(["sh", "-c", "kill $(ps | grep '/tmp/t.json' | grep -v grep | awk '{print $1}') 2>/dev/null; rm -f /tmp/t.log"])
-    dx(["sh", "-c", "cat > /tmp/t.json"], inp=json.dumps(cfg))
-    sh(["docker", "exec", "-d", CT, "sh", "-c", "xray run -c /tmp/t.json >/tmp/t.log 2>&1"])
+    json.dump(cfg, open("/tmp/xray-test.json", "w"))
+    lg = open("/tmp/xray-test.log", "w")
+    pr = subprocess.Popen(["/tmp/xray-test", "run", "-c", "/tmp/xray-test.json"], stdout=lg, stderr=lg)
     time.sleep(3)
+    good = False
     try:
-        rc, res = dx(["sh", "-c", "http_proxy=http://127.0.0.1:10998 wget -qO- -T 10 http://1.1.1.1/cdn-cgi/trace | head -3"], timeout=30)
-    except subprocess.TimeoutExpired:
-        res = "таймаут"
-    good = "ip=" in res
-    ok(good, "запрос через ключ внутри сервера " + ("прошёл: " + res.strip().replace("\n", " ") if good else "НЕ прошёл"))
+        rc, r1 = sh(["curl", "-s", "-m", "15", "-x", "http://127.0.0.1:10998", "http://1.1.1.1/cdn-cgi/trace"], timeout=25)
+        good = "ip=" in r1
+        ok(good, "http-запрос через ключ " + ("прошёл: " + " ".join(l for l in r1.splitlines() if l.startswith("ip=")) if good else "НЕ прошёл"))
+        rc, r2 = sh(["curl", "-s", "-m", "15", "-x", "http://127.0.0.1:10998", "-o", "/dev/null", "-w", "%{http_code}", "https://www.google.com"], timeout=25)
+        ok(r2.strip().startswith(("2", "3")), "https-запрос (google.com) через ключ: код " + r2.strip())
+    finally:
+        pr.kill()
     if not good:
-        rc, lg = dx(["sh", "-c", "tail -n 6 /tmp/t.log"])
-        print("  лог теста:", lg.strip()[:600])
-    dx(["sh", "-c", "kill $(ps | grep '/tmp/t.json' | grep -v grep | awk '{print $1}') 2>/dev/null; rm -f /tmp/t.json /tmp/t.log"])
+        print("  лог теста:", open("/tmp/xray-test.log").read()[-600:])
+    for f in ("/tmp/xray-test", "/tmp/xray-test.json", "/tmp/xray-test.log"):
+        try:
+            os.remove(f)
+        except OSError:
+            pass
 
     print("== Вывод")
     if good:
         print("  Сам ключ и сервер исправны. Значит, трафик не доходит от вашего устройства до сервера (провайдер/сеть/порт).")
     else:
-        print("  Ключ не работает даже внутри сервера: проблема в настройках сервера или клиента (см. пункты [!!] выше).")
+        print("  Ключ не работает даже на самом сервере: проблема в настройках сервера или клиента (см. пункты [!!] выше).")
 
 
 try:
