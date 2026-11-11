@@ -48,8 +48,17 @@ class VpnSvc : VpnService() {
                     .addRoute("0.0.0.0", 0)
                     .addDnsServer("1.1.1.1")
                     .addDnsServer("8.8.8.8")
-                // само приложение (и ядро Xray внутри него) ходит в интернет мимо VPN, иначе будет петля
-                try { b.addDisallowedApplication(packageName) } catch (e: Exception) { }
+                // раздельная маршрутизация: приложения напрямую или только выбранные через VPN
+                val mode = Store.splitMode
+                val apps = Store.splitApps.filter { it != packageName }
+                if (mode == "only" && apps.isNotEmpty()) {
+                    // само приложение не в списке разрешённых, поэтому его трафик (ядро Xray) идёт мимо VPN, петли нет
+                    for (p in apps) try { b.addAllowedApplication(p) } catch (e: Exception) { }
+                } else {
+                    // само приложение (и ядро Xray внутри него) ходит в интернет мимо VPN, иначе будет петля
+                    try { b.addDisallowedApplication(packageName) } catch (e: Exception) { }
+                    if (mode == "bypass") for (p in apps) try { b.addDisallowedApplication(p) } catch (e: Exception) { }
+                }
                 val f = b.establish() ?: throw Exception("VPN не разрешён системой.")
                 pfd = f
                 Libv2ray.initCoreEnv(filesDir.absolutePath, "")

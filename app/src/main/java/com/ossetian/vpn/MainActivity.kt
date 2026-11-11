@@ -83,6 +83,28 @@ class MainActivity : Activity() {
         }
     }
 
+    private fun listApps(): String {
+        val pm = packageManager
+        val i = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
+        val seen = HashSet<String>()
+        val out = org.json.JSONArray()
+        val items = pm.queryIntentActivities(i, 0).filter { it.activityInfo.packageName != packageName }
+        for (r in items) {
+            val p = r.activityInfo.packageName
+            if (!seen.add(p)) continue
+            try {
+                val bmp = android.graphics.Bitmap.createBitmap(48, 48, android.graphics.Bitmap.Config.ARGB_8888)
+                val d = r.loadIcon(pm)
+                d.setBounds(0, 0, 48, 48); d.draw(android.graphics.Canvas(bmp))
+                val bo = java.io.ByteArrayOutputStream()
+                bmp.compress(android.graphics.Bitmap.CompressFormat.PNG, 90, bo)
+                out.put(JSONObject().put("p", p).put("n", r.loadLabel(pm).toString())
+                    .put("i", android.util.Base64.encodeToString(bo.toByteArray(), android.util.Base64.NO_WRAP)))
+            } catch (e: Throwable) { }
+        }
+        return out.toString()
+    }
+
     inner class Bridge {
         @JavascriptInterface
         fun call(id: Int, name: String, arg: String) {
@@ -95,6 +117,14 @@ class MainActivity : Activity() {
         private fun handle(name: String, a: JSONObject): String {
             when (name) {
                 "get" -> return Store.publicState().toString()
+                "apps" -> return listApps()
+                "split" -> {
+                    Store.splitMode = a.optString("mode", "off")
+                    val arr = a.optJSONArray("apps")
+                    Store.splitApps = (0 until (arr?.length() ?: 0)).map { arr!!.getString(it) }
+                    push()
+                    if (Core.status == "on") { ui.post { stopVpn() }; ui.postDelayed({ startVpn() }, 900) }
+                }
                 "refresh" -> { Store.refresh(); push() }
                 "connect" -> ui.post { startVpn() }
                 "disconnect" -> ui.post { stopVpn() }

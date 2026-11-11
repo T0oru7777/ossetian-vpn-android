@@ -49,6 +49,13 @@ object Store {
         get() = s().getBoolean("intro", true)
         set(v) { s().edit().putBoolean("intro", v).apply() }
 
+    var splitMode: String
+        get() = s().getString("splitMode", "off") ?: "off"
+        set(v) { s().edit().putString("splitMode", v).apply() }
+    var splitApps: List<String>
+        get() = (s().getString("splitApps", "") ?: "").split("\n").filter { it.isNotBlank() }
+        set(v) { s().edit().putString("splitApps", v.joinToString("\n")).apply() }
+
     fun selectedRaw(): String? {
         val a = keys()
         for (i in 0 until a.length()) if (a.getJSONObject(i).optString("id") == selected) return a.getJSONObject(i).optString("raw")
@@ -135,6 +142,7 @@ object Store {
                 .put("info", k.optJSONObject("info") ?: JSONObject.NULL).put("ping", k.optInt("ping", -1)))
         }
         return JSONObject().put("keys", ks).put("selected", selected)
+            .put("split", JSONObject().put("mode", splitMode).put("apps", JSONArray(splitApps)))
             .put("settings", JSONObject().put("systemProxy", false).put("intro", intro).put("theme", theme))
             .put("state", JSONObject().put("status", Core.status).put("error", Core.error).put("since", Core.since).put("ip", Core.ip))
     }
