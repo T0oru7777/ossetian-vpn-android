@@ -416,6 +416,25 @@
       }
       box.appendChild(toggle("intro", "Заставка при запуске", "Горы, солнце и орнамент при открытии"));
       box.appendChild(toggle("fx", "Живые эффекты", "Светлячки, орёл, искры, конфетти"));
+
+      box.appendChild(el("div", { class: "set-h", text: "Подключение" }));
+      function ptoggle(key, title, desc) {
+        var on = !!(N && N.prefs && N.prefs[key]);
+        return el("button", { class: "swrow", role: "switch", "aria-checked": on ? "true" : "false", onclick: function () {
+          var v = {}; v[key] = !on; N.prefs[key] = !on; window.vpn.setPrefs(v); haptic(); build();
+        } }, el("div", null, el("b", { text: title }), el("span", { class: "d", text: desc })), el("span", { class: "sw" + (on ? " on" : "") }));
+      }
+      box.appendChild(ptoggle("autoReconnect", "Автопереподключение", "Если связь пропала, VPN включится заново сам"));
+      box.appendChild(ptoggle("connectOnStart", "Подключаться при запуске", "Включать VPN сразу при открытии приложения"));
+      box.appendChild(el("div", { class: "set-h", text: "Автообновление данных" }));
+      box.appendChild(el("p", { class: "sub", style: "margin:0 2px 10px", text: "Как часто обновлять срок подписки, число устройств и пинг серверов." }));
+      var rseg = el("div", { class: "seg" });
+      [[0, "Выкл", ""], [30, "30 минут", ""], [60, "1 час", ""], [120, "2 часа", ""]].forEach(function (r) {
+        rseg.appendChild(el("button", { class: (N.prefs.refreshMin === r[0] ? "sel" : ""), onclick: function () {
+          N.prefs.refreshMin = r[0]; window.vpn.setPrefs({ refreshMin: r[0] }); armRefresh(); haptic(); build();
+        } }, r[1], r[2] ? el("small", { text: r[2] }) : null));
+      });
+      rseg.style.marginBottom = "12px"; box.appendChild(rseg);
       box.appendChild(el("button", { class: "btn btn-ghost", style: "margin-top:6px", text: "Сбросить всё", onclick: function () {
         settings.theme = "iryston"; settings.gold = "#e9b949"; settings.river = "#5fd0c6"; settings.red = "#d8453a"; settings.bg = "#0a1224";
         settings.trans = "slide"; settings.intro = true; settings.fx = true; applyTheme(); saveSettings(); haptic(); build();
@@ -678,9 +697,17 @@
     render();
     if (was && was !== "on" && n.state.status === "on") confetti();
   });
-  refresh();
+  refresh().then(function () {
+    armRefresh();
+    if (!startedOnce) { startedOnce = true; if (N.prefs && N.prefs.connectOnStart && curKey() && N.state.status === "off") window.vpn.connect(); }
+  });
   window.vpn.refresh();
-  setInterval(function () { window.vpn.refresh(); }, 60000);
+  var refreshTimer = 0, startedOnce = false;
+  function armRefresh() {
+    clearInterval(refreshTimer);
+    var m = N && N.prefs ? N.prefs.refreshMin : 60;
+    if (m > 0) refreshTimer = setInterval(function () { window.vpn.refresh(); }, m * 60000);
+  }
   setInterval(function () {
     if (!N) return;
     var t = document.getElementById("tm");

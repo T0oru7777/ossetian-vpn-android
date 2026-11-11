@@ -49,6 +49,16 @@ object Store {
         get() = s().getBoolean("intro", true)
         set(v) { s().edit().putBoolean("intro", v).apply() }
 
+    var autoReconnect: Boolean
+        get() = s().getBoolean("autoReconnect", true)
+        set(v) { s().edit().putBoolean("autoReconnect", v).apply() }
+    var connectOnStart: Boolean
+        get() = s().getBoolean("connectOnStart", false)
+        set(v) { s().edit().putBoolean("connectOnStart", v).apply() }
+    var refreshMin: Int
+        get() = s().getInt("refreshMin", 60)
+        set(v) { s().edit().putInt("refreshMin", v).apply() }
+
     var splitMode: String
         get() = s().getString("splitMode", "off") ?: "off"
         set(v) { s().edit().putString("splitMode", v).apply() }
@@ -142,6 +152,7 @@ object Store {
                 .put("info", k.optJSONObject("info") ?: JSONObject.NULL).put("ping", k.optInt("ping", -1)))
         }
         return JSONObject().put("keys", ks).put("selected", selected)
+            .put("prefs", JSONObject().put("autoReconnect", autoReconnect).put("connectOnStart", connectOnStart).put("refreshMin", refreshMin))
             .put("split", JSONObject().put("mode", splitMode).put("apps", JSONArray(splitApps)))
             .put("settings", JSONObject().put("systemProxy", false).put("intro", intro).put("theme", theme))
             .put("state", JSONObject().put("status", Core.status).put("error", Core.error).put("since", Core.since).put("ip", Core.ip))

@@ -118,6 +118,12 @@ class MainActivity : Activity() {
             when (name) {
                 "get" -> return Store.publicState().toString()
                 "apps" -> return listApps()
+                "prefs" -> {
+                    if (a.has("autoReconnect")) Store.autoReconnect = a.optBoolean("autoReconnect")
+                    if (a.has("connectOnStart")) Store.connectOnStart = a.optBoolean("connectOnStart")
+                    if (a.has("refreshMin")) Store.refreshMin = a.optInt("refreshMin")
+                    push()
+                }
                 "split" -> {
                     Store.splitMode = a.optString("mode", "off")
                     val arr = a.optJSONArray("apps")

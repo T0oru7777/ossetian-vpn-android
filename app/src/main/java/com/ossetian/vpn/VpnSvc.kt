@@ -10,6 +10,8 @@ import libv2ray.Libv2ray
 class VpnSvc : VpnService() {
     private var pfd: ParcelFileDescriptor? = null
     private var ctrl: CoreController? = null
+    private var socksPortNow = 0
+    @Volatile private var gen = 0
 
     private val handler = object : CoreCallbackHandler {
         override fun startup(): Long = 0
@@ -31,6 +33,7 @@ class VpnSvc : VpnService() {
                 val raw = Store.selectedRaw() ?: throw Exception("Сначала добавь ключ.")
                 val parsed = Keys.parse(raw)
                 val socksPort = java.net.ServerSocket(0).use { it.localPort }
+                socksPortNow = socksPort
                 val cfg = Keys.buildConfig(parsed.outbound, socksPort).toString()
                 // проверяем, что сервер вообще отвечает (до включения VPN, поэтому напрямую)
                 val net = parsed.outbound.optJSONObject("streamSettings")?.optString("network", "tcp") ?: "tcp"
@@ -67,6 +70,7 @@ class VpnSvc : VpnService() {
                 c.startLoop(cfg, f.fd)
                 val ip = healthCheck(socksPort) ?: throw Exception("NOTUNNEL")
                 Core.set("on", "", ip)
+                monitor(++gen)
             } catch (e: Throwable) {
                 cleanup()
                 val m = e.message ?: e.javaClass.simpleName
@@ -85,9 +89,9 @@ class VpnSvc : VpnService() {
      * Проверяет, что интернет идёт через туннель. Возвращает внешний IP, пустую строку (ответ получен, но IP неизвестен)
      * или null, если через сервер ничего не проходит.
      */
-    private fun healthCheck(socksPort: Int): String? {
+    private fun healthCheck(socksPort: Int, attempts: Int = 3): String? {
         val proxy = java.net.Proxy(java.net.Proxy.Type.SOCKS, java.net.InetSocketAddress("127.0.0.1", socksPort))
-        for (i in 0 until 3) {
+        for (i in 0 until attempts) {
             try {
                 val c = java.net.URL("https://1.1.1.1/cdn-cgi/trace").openConnection(proxy) as java.net.HttpURLConnection
                 c.connectTimeout = 5000
@@ -114,6 +118,37 @@ class VpnSvc : VpnService() {
         return null
     }
 
+    /** Следит за туннелем: обновляет данные по расписанию и переподключает при обрыве. */
+    private fun monitor(my: Int) {
+        Thread {
+            var fails = 0
+            var tries = 0
+            var lastRefresh = System.currentTimeMillis()
+            while (my == gen && Core.status == "on") {
+                try { Thread.sleep(15000) } catch (e: InterruptedException) { }
+                if (my != gen || Core.status != "on") return@Thread
+                val m = Store.refreshMin
+                if (m > 0 && System.currentTimeMillis() - lastRefresh >= m * 60000L) {
+                    lastRefresh = System.currentTimeMillis()
+                    try { Store.refresh() } catch (e: Throwable) { }
+                }
+                val ok = healthCheck(socksPortNow, 1) != null
+                fails = if (ok) 0 else fails + 1
+                if (ok) tries = 0
+                if (fails >= 2 && Store.autoReconnect) {
+                    if (++tries > 5) {
+                        cleanup(); Core.set("off", "Связь пропала, и переподключиться не удалось. Проверь интернет и нажми кнопку ещё раз."); stopSelf(); return@Thread
+                    }
+                    gen++
+                    cleanup()
+                    Core.set("off")
+                    startAll()
+                    return@Thread
+                }
+            }
+        }.start()
+    }
+
     private fun cleanup() {
         try { ctrl?.stopLoop() } catch (e: Throwable) { }
         ctrl = null
@@ -122,6 +157,7 @@ class VpnSvc : VpnService() {
     }
 
     private fun stopAll() {
+        gen++
         Thread {
             cleanup()
             Core.set("off")
@@ -130,6 +166,7 @@ class VpnSvc : VpnService() {
     }
 
     override fun onRevoke() {
+        gen++
         // пользователь выключил VPN в системных настройках
         cleanup()
         Core.set("off")

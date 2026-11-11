@@ -11,6 +11,7 @@
     refresh: function () { return call("refresh"); },
     apps: function () { return call("apps"); },
     setSplit: function (v) { return call("split", v); },
+    setPrefs: function (v) { return call("prefs", v); },
     connect: function () { return call("connect"); },
     disconnect: function () { return call("disconnect"); },
     addKey: function (t) { return call("addKey", { text: t }); },
