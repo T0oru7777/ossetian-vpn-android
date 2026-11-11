@@ -153,8 +153,8 @@
   function topBar() {
     var sub = S.sub, label, cls = "";
     if (!sub) { label = "Нет подписки"; }
-    else if (sub.active) { label = (sub.trial ? "Пробный период · " : "Активна · ") + sub.left; cls = "ok"; }
-    else { label = "Подписка закончилась"; }
+    else if (sub.active) { label = (sub.trial ? "Пробный · " : "Активна · ") + sub.left; cls = "ok"; }
+    else { label = "Истекла"; }
     var initial = (S.user.name || "V").trim().charAt(0).toUpperCase();
     var av = el("button", { class: "avatar", "aria-label": "Профиль", onclick: function () { haptic(); openProfile(); } });
     if (S.user.photo) { var img = el("img", { src: S.user.photo, alt: "" }); img.onerror = function () { img.remove(); av.textContent = initial; }; av.appendChild(img); }
@@ -162,7 +162,7 @@
     var gear = el("button", { class: "gear", "aria-label": "Настройки", onclick: function () { haptic(); openSettings(); } });
     gear.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 14.5a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-1.8-.3 1.6 1.6 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.6 1.6 0 0 0-1-1.5 1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0 .3-1.8 1.6 1.6 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.6 1.6 0 0 0 1.5-1 1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 1.8.3h0a1.6 1.6 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 1 1.5 1.6 1.6 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8v0a1.6 1.6 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1z"/></svg>';
     return el("div", { class: "top" }, av, gear,
-      el("div", { class: "pill status-pill" }, el("span", { class: "dot " + cls }), label),
+      el("div", { class: "pill status-pill" }, el("span", { class: "dot " + cls }), el("span", { class: "lbl", text: label })),
       el("div", { class: "pill" }, S.devices.used + " / " + S.devices.limit));
   }
 

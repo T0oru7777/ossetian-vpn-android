@@ -93,9 +93,9 @@ class MainActivity : Activity() {
             val p = r.activityInfo.packageName
             if (!seen.add(p)) continue
             try {
-                val bmp = android.graphics.Bitmap.createBitmap(48, 48, android.graphics.Bitmap.Config.ARGB_8888)
+                val bmp = android.graphics.Bitmap.createBitmap(96, 96, android.graphics.Bitmap.Config.ARGB_8888)
                 val d = r.loadIcon(pm)
-                d.setBounds(0, 0, 48, 48); d.draw(android.graphics.Canvas(bmp))
+                d.setBounds(0, 0, 96, 96); d.draw(android.graphics.Canvas(bmp))
                 val bo = java.io.ByteArrayOutputStream()
                 bmp.compress(android.graphics.Bitmap.CompressFormat.PNG, 90, bo)
                 out.put(JSONObject().put("p", p).put("n", r.loadLabel(pm).toString())

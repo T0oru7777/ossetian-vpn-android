@@ -218,7 +218,7 @@ input { font: inherit; }
 .i-star { animation: twinkle 2.4s ease-in-out infinite; }
 @keyframes twinkle { 0%, 100% { opacity: .15; } 50% { opacity: 1; } }
 .i-glint { transform-box: fill-box; transform-origin: 50% 50%; animation: glint 2.8s ease-in-out 2.9s infinite both; opacity: 0; }
-@keyframes glint { 0%, 100% { opacity: 0; transform: scale(.2); } 40% { opacity: 1; transform: scale(1); } 60% { opacity: 1; transform: scale(.9); } 85% { opacity: 0; transform: scale(.3); } }
+@keyframes glint { 0% { opacity: 0; transform: scale(.2) rotate(0deg); } 40% { opacity: 1; transform: scale(1) rotate(130deg); } 60% { opacity: 1; transform: scale(.92) rotate(200deg); } 85% { opacity: 0; transform: scale(.3) rotate(300deg); } 100% { opacity: 0; transform: scale(.2) rotate(360deg); } }
 .aurora { position: absolute; left: -30%; width: 160%; height: 46%; opacity: 0; pointer-events: none; will-change: transform; }
 .aurora.a1 { top: 4%; background: radial-gradient(60% 60% at 30% 50%, rgba(var(--river-rgb),.55), transparent 70%); animation: aur 9s ease-in-out 1s infinite alternate, fadeIn 2.4s ease-out .6s forwards; }
 .aurora.a2 { top: 10%; background: radial-gradient(55% 55% at 70% 50%, rgba(var(--red-rgb),.38), transparent 70%); animation: aur 11s ease-in-out .2s infinite alternate-reverse, fadeIn 2.4s ease-out 1.2s forwards; }
