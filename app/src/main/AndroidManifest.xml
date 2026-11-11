@@ -13,8 +13,7 @@
 
     <application
         android:allowBackup="false"
-        android:icon="@mipmap/ic_launcher"
-        android:roundIcon="@mipmap/ic_launcher_round"
+        android:icon="@mipmap/ic_classic"
         android:label="Ossetian VPN"
         android:theme="@style/AppTheme">
 
@@ -24,11 +23,85 @@
             android:exported="true"
             android:screenOrientation="portrait"
             android:windowSoftInputMode="adjustResize">
+        </activity>
+
+        <activity-alias
+            android:name=".IconClassic"
+            android:enabled="true"
+            android:exported="true"
+            android:icon="@mipmap/ic_classic"
+            android:label="Ossetian VPN"
+            android:targetActivity=".MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-        </activity>
+        </activity-alias>
+
+        <activity-alias
+            android:name=".IconVpn"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_vpn"
+            android:label="Ossetian VPN"
+            android:targetActivity=".MainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <activity-alias
+            android:name=".IconGold"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_gold"
+            android:label="Ossetian VPN"
+            android:targetActivity=".MainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <activity-alias
+            android:name=".IconRiver"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_river"
+            android:label="Ossetian VPN"
+            android:targetActivity=".MainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <activity-alias
+            android:name=".IconSun"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_sun"
+            android:label="Ossetian VPN"
+            android:targetActivity=".MainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <activity-alias
+            android:name=".IconOrn"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_orn"
+            android:label="Ossetian VPN"
+            android:targetActivity=".MainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
 
         <service
             android:name=".VpnSvc"

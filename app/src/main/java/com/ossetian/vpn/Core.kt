@@ -59,6 +59,8 @@ object Store {
         get() = s().getInt("refreshMin", 60)
         set(v) { s().edit().putInt("refreshMin", v).apply() }
 
+    @Volatile var iconId: String = "classic"
+
     var splitMode: String
         get() = s().getString("splitMode", "off") ?: "off"
         set(v) { s().edit().putString("splitMode", v).apply() }
@@ -152,6 +154,7 @@ object Store {
                 .put("info", k.optJSONObject("info") ?: JSONObject.NULL).put("ping", k.optInt("ping", -1)))
         }
         return JSONObject().put("keys", ks).put("selected", selected)
+            .put("icon", iconId)
             .put("prefs", JSONObject().put("autoReconnect", autoReconnect).put("connectOnStart", connectOnStart).put("refreshMin", refreshMin))
             .put("split", JSONObject().put("mode", splitMode).put("apps", JSONArray(splitApps)))
             .put("settings", JSONObject().put("systemProxy", false).put("intro", intro).put("theme", theme))

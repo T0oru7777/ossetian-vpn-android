@@ -21,6 +21,7 @@ class MainActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         Store.init(applicationContext)
+        Store.iconId = currentIcon()
         web = WebView(this)
         web.setBackgroundColor(Color.parseColor("#0A1224"))
         web.settings.apply {
@@ -83,6 +84,26 @@ class MainActivity : Activity() {
         }
     }
 
+    private val iconIds = listOf("classic", "vpn", "gold", "river", "sun", "orn")
+    private fun alias(id: String) = android.content.ComponentName(packageName, "com.ossetian.vpn.Icon" + id.replaceFirstChar { it.uppercase() })
+
+    private fun currentIcon(): String {
+        for (id in iconIds) {
+            val st = packageManager.getComponentEnabledSetting(alias(id))
+            if (st == android.content.pm.PackageManager.COMPONENT_ENABLED_STATE_ENABLED) return id
+        }
+        return "classic"
+    }
+
+    private fun setIcon(id: String) {
+        if (id !in iconIds || id == Store.iconId) return
+        val pm = packageManager
+        // сначала включаем новую, потом выключаем остальные, чтобы значок не пропал
+        pm.setComponentEnabledSetting(alias(id), android.content.pm.PackageManager.COMPONENT_ENABLED_STATE_ENABLED, android.content.pm.PackageManager.DONT_KILL_APP)
+        for (o in iconIds) if (o != id) pm.setComponentEnabledSetting(alias(o), android.content.pm.PackageManager.COMPONENT_ENABLED_STATE_DISABLED, android.content.pm.PackageManager.DONT_KILL_APP)
+        Store.iconId = id
+    }
+
     private fun listApps(): String {
         val pm = packageManager
         val i = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
@@ -118,6 +139,7 @@ class MainActivity : Activity() {
             when (name) {
                 "get" -> return Store.publicState().toString()
                 "apps" -> return listApps()
+                "icon" -> { setIcon(a.optString("id")); push() }
                 "prefs" -> {
                     if (a.has("autoReconnect")) Store.autoReconnect = a.optBoolean("autoReconnect")
                     if (a.has("connectOnStart")) Store.connectOnStart = a.optBoolean("connectOnStart")

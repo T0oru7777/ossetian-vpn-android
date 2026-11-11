@@ -12,6 +12,7 @@
     apps: function () { return call("apps"); },
     setSplit: function (v) { return call("split", v); },
     setPrefs: function (v) { return call("prefs", v); },
+    setIcon: function (id) { return call("icon", { id: id }); },
     connect: function () { return call("connect"); },
     disconnect: function () { return call("disconnect"); },
     addKey: function (t) { return call("addKey", { text: t }); },

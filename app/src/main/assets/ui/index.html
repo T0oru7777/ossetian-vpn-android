@@ -417,6 +417,14 @@
       box.appendChild(toggle("intro", "Заставка при запуске", "Горы, солнце и орнамент при открытии"));
       box.appendChild(toggle("fx", "Живые эффекты", "Светлячки, орёл, искры, конфетти"));
 
+      box.appendChild(el("div", { class: "set-h", text: "Иконка приложения" }));
+      var igrid = el("div", { class: "icon-grid" });
+      [["classic", "Классика"], ["vpn", "Горы VPN"], ["gold", "Золотые горы"], ["river", "Горы и река"], ["sun", "Золотой круг"], ["orn", "Орнамент"]].forEach(function (ic) {
+        igrid.appendChild(el("button", { class: "icon-opt" + (N.icon === ic[0] ? " sel" : ""), onclick: function () {
+          if (N.icon === ic[0]) return; N.icon = ic[0]; window.vpn.setIcon(ic[0]); haptic(); toast("Иконка сменится через пару секунд"); build();
+        } }, el("img", { src: "icons/" + ic[0] + ".png", alt: "" }), el("span", { text: ic[1] })));
+      });
+      box.appendChild(igrid);
       box.appendChild(el("div", { class: "set-h", text: "Подключение" }));
       function ptoggle(key, title, desc) {
         var on = !!(N && N.prefs && N.prefs[key]);
