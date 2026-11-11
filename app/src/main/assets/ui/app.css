@@ -43,3 +43,9 @@ textarea.kin:focus { outline: none; border-color: var(--gold); }
 ::-webkit-scrollbar { width: 8px; } ::-webkit-scrollbar-thumb { background: rgba(255,255,255,.14); border-radius: 8px; }
 @media (prefers-reduced-motion: reduce) { .splash { display: none; } }
 .keycard > svg { width: 22px; height: 22px; color: var(--muted); flex: none; }
+
+.stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 16px; }
+.stat { padding: 12px 14px; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.stat span { color: var(--muted); font-size: 12.5px; }
+.stat b { font-size: 18px; color: var(--gold); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.stat small { color: var(--muted); font-size: 12.5px; }

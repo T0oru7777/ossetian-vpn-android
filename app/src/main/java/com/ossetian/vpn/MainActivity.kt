@@ -95,9 +95,10 @@ class MainActivity : Activity() {
         private fun handle(name: String, a: JSONObject): String {
             when (name) {
                 "get" -> return Store.publicState().toString()
+                "refresh" -> { Store.refresh(); push() }
                 "connect" -> ui.post { startVpn() }
                 "disconnect" -> ui.post { stopVpn() }
-                "addKey" -> { val r = Store.addKey(a.optString("text")); push(); return r.toString() }
+                "addKey" -> { val r = Store.addKey(a.optString("text")); push(); if (r.optBoolean("ok")) Thread { Store.refresh(); push() }.start(); return r.toString() }
                 "removeKey" -> {
                     if (a.optString("id") == Store.selected && Core.status != "off") ui.post { stopVpn() }
                     Store.removeKey(a.optString("id")); push()

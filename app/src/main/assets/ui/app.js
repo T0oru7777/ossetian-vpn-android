@@ -50,7 +50,7 @@
 
   var S = null, tab = "home", prevTab = "home", timer = null;
   var ORDER = ["home", "keys", "help"];
-  var TABS = [["home", "Главная", ICON.home], ["keys", "Ключи", ICON.key], ["help", "Помощь", ICON.help]];
+  var TABS = [["home", "Главная", ICON.home], ["keys", "Серверы", ICON.key], ["help", "Помощь", ICON.help]];
   var app = document.getElementById("app"), nav = document.getElementById("tabs"), navInd = null;
 
   function toast(t) { var o = document.getElementById("toast"); if (o) o.remove(); var n = el("div", { id: "toast", class: "toast", text: t }); document.body.appendChild(n); setTimeout(function () { n.remove(); }, 3200); }
@@ -72,6 +72,24 @@
     return b;
   }
   function fmt(ms) { var s = Math.floor(ms / 1000), h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60); s %= 60; return (h ? h + ":" : "") + String(m).padStart(h ? 2 : 1, "0") + ":" + String(s).padStart(2, "0"); }
+  function leftText(exp) {
+    var d = exp * 1000 - Date.now();
+    if (d <= 0) return "срок истёк";
+    var days = Math.floor(d / 864e5), h = Math.floor(d % 864e5 / 36e5), m = Math.floor(d % 36e5 / 6e4);
+    var pl = function (n, a, b, c) { n = Math.abs(n) % 100; var r = n % 10; return n > 10 && n < 20 ? c : r > 1 && r < 5 ? b : r === 1 ? a : c; };
+    return days ? days + " " + pl(days, "день", "дня", "дней") + (h ? " " + h + " ч" : "") : h ? h + " ч " + m + " мин" : m + " мин";
+  }
+  function dateText(exp) { var x = new Date(exp * 1000); return String(x.getDate()).padStart(2, "0") + "." + String(x.getMonth() + 1).padStart(2, "0") + "." + x.getFullYear(); }
+  function stats(k) {
+    var inf = k && k.info, sub = inf && inf.sub, row = el("div", { class: "stats" });
+    function tile(label, big, small) { return el("div", { class: "glass stat" }, el("span", { text: label }), el("b", { text: big }), el("small", { text: small || "" })); }
+    if (!inf) { row.appendChild(tile("Подписка", "—", k ? "Нет связи с ботом" : "Добавь ключ")); row.appendChild(tile("Устройства", "—", "")); return row; }
+    var exp = sub ? sub.expires_at : inf.key_expires_at, alive = exp * 1000 > Date.now();
+    row.appendChild(tile(sub && sub.trial ? "Пробный период" : "Подписка", alive ? leftText(exp) : "Закончилась", "до " + dateText(exp)));
+    var dv = inf.devices || {}; var full = dv.used >= dv.limit;
+    row.appendChild(tile("Устройства", dv.used + " из " + dv.limit, full ? "Лимит достигнут" : "Свободно: " + (dv.limit - dv.used)));
+    return row;
+  }
   function curKey() { return S.keys.filter(function (k) { return k.id === S.selected; })[0]; }
 
   /* ---------- вкладки ---------- */
@@ -87,6 +105,7 @@
       el("div", { class: "power-wrap" }, btn),
       el("div", { class: "state" }, on ? "Защищено" : busy ? "Подключаем" : "Отключено", timerEl),
       st.error ? el("div", { class: "err", text: st.error }) : null,
+      stats(k),
       el("button", { class: "glass keycard", onclick: function () { go("keys"); } },
         el("div", { class: "ic" }, svg(ICON.key)),
         el("div", { class: "t" }, el("b", { text: k ? k.name : "Ключ не выбран" }), el("span", { text: k ? k.host + ":" + k.port : "Нажми, чтобы добавить" })),
@@ -94,12 +113,12 @@
     return w;
   }
   function viewKeys() {
-    var w = el("div", null, el("div", { class: "h2", text: "Мои ключи" }), el("div", { class: "orn" }));
+    var w = el("div", null, el("div", { class: "h2", text: "Серверы" }), el("div", { class: "orn" }));
     if (!S.keys.length) w.appendChild(el("p", { class: "sub", text: "Ключей пока нет. Получи ключ в боте и вставь его сюда." }));
     S.keys.forEach(function (k) {
       w.appendChild(el("div", { class: "glass dev" + (k.id === S.selected ? " sel" : ""), style: "cursor:pointer", onclick: function () { if (k.id !== S.selected) window.vpn.selectKey(k.id); } },
         el("div", { class: "hero-icon" + (k.id === S.selected ? " ok" : ""), style: "width:44px;height:44px;margin:0;flex:none" }, svg(ICON.key)),
-        el("div", { class: "t" }, el("b", { text: k.name }), el("span", { text: k.host + ":" + k.port + (k.id === S.selected ? " · выбран" : "") })),
+        el("div", { class: "t" }, el("b", { text: k.name }), el("span", { text: (k.ping > 0 ? k.ping + " мс" : k.ping === 0 ? "…" : "нет ответа") + (k.id === S.selected ? " · выбран" : "") })),
         el("button", { class: "x", title: "Удалить", onclick: function (e) { e.stopPropagation(); window.vpn.removeKey(k.id); } }, svg(ICON.x))));
     });
     w.appendChild(el("button", { class: "btn btn-main", style: "margin-top:14px", onclick: openAdd }, "Добавить ключ"));
@@ -206,9 +225,8 @@
     }
     var glint = document.createElementNS(NS, "g");  // вспышка ровно на вершине (172, 64)
     glint.setAttribute("transform", "translate(172,64)");
-    glint.innerHTML = '<defs><radialGradient id="iGl"><stop offset="0" stop-color="#fff" stop-opacity=".95"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient></defs>' +
-      '<g class="i-glint"><circle r="11" fill="url(#iGl)"/><path d="M0,-17 L1.7,-1.7 L17,0 L1.7,1.7 L0,17 L-1.7,1.7 L-17,0 L-1.7,-1.7Z" fill="#fff"/>' +
-      '<path d="M0,-7 L1,-1 L7,0 L1,1 L0,7 L-1,1 L-7,0 L-1,-1Z" fill="#fff" transform="rotate(45)"/></g>';
+    glint.innerHTML = '<defs><radialGradient id="iGl"><stop offset="0" stop-color="#fff" stop-opacity=".9"/><stop offset=".45" stop-color="#fff3c9" stop-opacity=".28"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient></defs>' +
+      '<g class="i-glint"><circle r="13" fill="url(#iGl)"/><path d="M0,-15 Q1.4,-1.4 15,0 Q1.4,1.4 0,15 Q-1.4,1.4 -15,0 Q-1.4,-1.4 0,-15Z" fill="#fff"/></g>';
     if (wide) {  // на широком экране горы растворяются по краям
       var defs = document.createElementNS(NS, "defs");
       defs.innerHTML = '<linearGradient id="iFadeG" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#000"/><stop offset=".22" stop-color="#fff"/><stop offset=".78" stop-color="#fff"/><stop offset="1" stop-color="#000"/></linearGradient>' +
@@ -257,7 +275,11 @@
     if (document.querySelector(".sheet-bg")) { if (tab === "keys" || tab === "home") render(false); return; }
     render(false);
   });
+  function refresh() { window.vpn.refresh(); }
+  setInterval(refresh, 60000);
+  setInterval(function () { if (tab === "home" && !document.querySelector(".sheet-bg") && S && S.state.status !== "connecting") render(false); }, 30000);
   window.vpn.get().then(function (s) {
+    refresh();
     S = s; applyTheme(s.settings.theme); render(false); syncNav(true);
     if (s.settings.intro) playIntro();
   });

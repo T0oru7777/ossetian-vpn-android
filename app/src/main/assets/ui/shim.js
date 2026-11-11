@@ -8,6 +8,7 @@
   }
   window.vpn = {
     get: function () { return call("get"); },
+    refresh: function () { return call("refresh"); },
     connect: function () { return call("connect"); },
     disconnect: function () { return call("disconnect"); },
     addKey: function (t) { return call("addKey", { text: t }); },
