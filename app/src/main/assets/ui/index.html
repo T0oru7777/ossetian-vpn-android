@@ -11,6 +11,7 @@
 <div id="app"><div class="skeleton"></div></div>
 <nav class="tabs hidden" id="tabs"></nav>
 <script src="shim.js"></script>
+<script src="intro2.js"></script>
 <script>
 (function () {
   "use strict";
@@ -27,7 +28,7 @@
     led: { name: "Лёд", gold: "#8ec5ff", river: "#7ee8fa", red: "#9a86ff", b1: "#162b52", b2: "#0d1a33", b3: "#070f1f" }
   };
   var TRANS = [["slide", "Скольжение", "по умолчанию"], ["gates", "Ворота", "с орнаментом"], ["fade", "Растворение", "мягко"], ["none", "Без анимации", "мгновенно"]];
-  var settings = { theme: "iryston", gold: "#e9b949", river: "#5fd0c6", red: "#d8453a", bg: "#0a1224", trans: "slide", intro: true, fx: true };
+  var settings = { theme: "iryston", gold: "#e9b949", river: "#5fd0c6", red: "#d8453a", bg: "#0a1224", trans: "slide", intro: true, introStyle: "mountains", fx: true };
   (function () {
     try {
       var saved = JSON.parse(localStorage.getItem("ov_settings") || "{}"), hex = /^#[0-9a-f]{6}$/i;
@@ -35,6 +36,7 @@
       ["gold", "river", "red", "bg"].forEach(function (k) { if (hex.test(saved[k] || "")) settings[k] = saved[k]; });
       if (TRANS.some(function (t) { return t[0] === saved.trans; })) settings.trans = saved.trans;
       if (typeof saved.intro === "boolean") settings.intro = saved.intro;
+      if (saved.introStyle === "mountains" || saved.introStyle === "classic") settings.introStyle = saved.introStyle;
       if (typeof saved.fx === "boolean") settings.fx = saved.fx;
     } catch (e) {}
   })();
@@ -415,6 +417,13 @@
           el("div", null, el("b", { text: title }), el("span", { class: "d", text: desc })), knob);
       }
       box.appendChild(toggle("intro", "Заставка при запуске", "Горы, солнце и орнамент при открытии"));
+      if (settings.intro) {
+        var iseg = el("div", { class: "seg" });
+        [["mountains", "Горы Ирыстона", "башни, река, рассвет"], ["classic", "Классика", "первая версия"]].forEach(function (t) {
+          iseg.appendChild(el("button", { class: settings.introStyle === t[0] ? "sel" : "", onclick: function () { settings.introStyle = t[0]; saveSettings(); haptic(); build(); } }, t[1], el("small", { text: t[2] })));
+        });
+        box.appendChild(iseg);
+      }
       box.appendChild(toggle("fx", "Живые эффекты", "Светлячки, орёл, искры, конфетти"));
 
       box.appendChild(el("div", { class: "set-h", text: "Иконка приложения" }));
@@ -445,7 +454,7 @@
       rseg.style.marginBottom = "12px"; box.appendChild(rseg);
       box.appendChild(el("button", { class: "btn btn-ghost", style: "margin-top:6px", text: "Сбросить всё", onclick: function () {
         settings.theme = "iryston"; settings.gold = "#e9b949"; settings.river = "#5fd0c6"; settings.red = "#d8453a"; settings.bg = "#0a1224";
-        settings.trans = "slide"; settings.intro = true; settings.fx = true; applyTheme(); saveSettings(); haptic(); build();
+        settings.trans = "slide"; settings.intro = true; settings.introStyle = "mountains"; settings.fx = true; applyTheme(); saveSettings(); haptic(); build();
       } }));
       box.appendChild(el("button", { class: "btn btn-main", style: "margin-top:10px", text: "Готово", onclick: closeSheet }));
     }
@@ -617,7 +626,33 @@
     if (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches) return false;
     return settings.intro !== false;
   }
+  function playIntro2() {
+    document.body.classList.add("introing");
+    if (!document.getElementById("intro2-css")) { var st = document.createElement("style"); st.id = "intro2-css"; st.textContent = window.OVIntro2.css + "\n.intro2 .i-skip { top: auto; bottom: calc(env(safe-area-inset-bottom) + 18px); }"; document.head.appendChild(st); }
+    var wide = window.innerWidth / window.innerHeight > 0.9;
+    var holder = document.createElement("div");
+    holder.innerHTML = '<svg class="world" viewBox="0 0 360 640" preserveAspectRatio="' + (wide ? "xMidYMid meet" : "xMidYMax slice") + '" xmlns="http://www.w3.org/2000/svg">' + window.OVIntro2.scene() + '</svg>';
+    var box = el("div", { class: "intro intro2", id: "intro" }, holder.firstChild, el("div", { class: "i-skip", text: "НАЖМИ, ЧТОБЫ ПРОПУСТИТЬ" }));
+    box.style.background = "#070d1d";
+    document.body.appendChild(box);
+    var done = false;
+    function finish() {
+      if (done) return; done = true;
+      box.classList.add("out");
+      setTimeout(function () {
+        document.body.classList.remove("introing");
+        var v = document.getElementById("app"); var view = v && v.querySelector(".view");
+        if (view) { view.classList.remove("enter"); void view.offsetWidth; view.classList.add("enter"); }
+        var nav = document.getElementById("tabs"); if (nav) { nav.classList.remove("rise"); void nav.offsetWidth; nav.classList.add("rise"); }
+      }, 160);
+      setTimeout(function () { box.remove(); }, 760);
+    }
+    var t0 = Date.now();
+    box.addEventListener("click", function () { if (Date.now() - t0 > 700) finish(); });
+    setTimeout(finish, 8200);
+  }
   function playIntro() {
+    if (settings.introStyle !== "classic" && window.OVIntro2) return playIntro2();
     document.body.classList.add("introing");
     var holder = document.createElement("div"); holder.innerHTML = SCENE;
     var svgEl = holder.firstChild;  // SCENE: статичная картинка из этого файла
